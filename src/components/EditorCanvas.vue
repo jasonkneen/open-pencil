@@ -6,7 +6,7 @@ import { useCanvasInput } from '@/composables/use-canvas-input'
 import { useCollabInjected } from '@/composables/use-collab'
 import { useTextEdit } from '@/composables/use-text-edit'
 import { useEditorStore } from '@/stores/editor'
-import { pageToHtml, selectionToHtml } from '@open-pencil/core'
+import { canvasPageToHtml } from '@open-pencil/core'
 import CanvasContextMenu from './CanvasContextMenu.vue'
 import CanvasControls from './CanvasControls.vue'
 
@@ -21,16 +21,10 @@ const previewHtml = computed(() => {
   if (!previewMode.value) return ''
   void store.state.sceneVersion
   if (!store.graph) return ''
-  const hasSelection = store.state.selectedIds.size > 0
-  if (hasSelection) {
-    return selectionToHtml([...store.state.selectedIds], store.graph, {
-      interactive: false,
-      background: 'transparent',
-    })
-  }
-  return pageToHtml(store.state.currentPageId, store.graph, {
-    interactive: true,
-    background: 'transparent',
+  return canvasPageToHtml(store.state.currentPageId, store.graph, {
+    panX: store.state.panX,
+    panY: store.state.panY,
+    zoom: store.state.zoom,
   })
 })
 
@@ -63,14 +57,18 @@ const cursor = computed(() => {
 <template>
   <CanvasContextMenu>
     <div class="canvas-area relative flex-1 min-w-0 min-h-0 overflow-hidden">
-      <!-- Skia canvas (always mounted) -->
-      <canvas ref="canvasRef" :style="{ cursor }" class="block size-full touch-none" />
+      <!-- Skia canvas — hidden in preview, stays mounted -->
+      <canvas
+        ref="canvasRef"
+        :style="{ cursor }"
+        class="block size-full touch-none"
+        :class="{ invisible: previewMode }"
+      />
 
-      <!-- Preview overlay (sits on top when active) -->
+      <!-- Preview iframe — same space, frames at exact canvas coordinates -->
       <Transition name="preview-fade">
         <iframe
           v-if="previewMode"
-          key="preview"
           :srcdoc="previewHtml"
           class="absolute inset-0 size-full border-none"
           sandbox="allow-scripts"

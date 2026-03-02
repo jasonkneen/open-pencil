@@ -83,6 +83,12 @@ export interface HtmlEmitOptions {
   scale?: number
 }
 
+export interface CanvasViewport {
+  panX: number
+  panY: number
+  zoom: number
+}
+
 /**
  * Emit a single node (and its subtree) as HTML.
  */
@@ -146,6 +152,68 @@ export function selectionToHtml(
   const inner = parts.join('\n')
   if (opts.fullDocument === false) return inner
   return wrapDocument(`<div style="display:flex;flex-wrap:wrap;gap:24px;padding:24px">\n${inner}\n</div>`, opts)
+}
+
+/**
+ * Emit the page with frames positioned exactly as they are on the canvas,
+ * applying the current pan + zoom so the preview matches 1:1 with the Skia view.
+ */
+export function canvasPageToHtml(
+  pageId: string,
+  graph: SceneGraph,
+  viewport: CanvasViewport,
+): string {
+  const frames = graph.getChildren(pageId).filter((n) => n.visible)
+  if (frames.length === 0) {
+    return wrapDocument('<p style="padding:24px;color:#555">No frames on this page</p>', {})
+  }
+
+  const frameBlocks = frames.map((f) => {
+    // Render children (inner content), not the frame itself — we control its outer box
+    const isAutoLayout = f.layoutMode !== 'NONE'
+    const childrenHtml = graph
+      .getChildren(f.id)
+      .map((c) => renderNode(c, graph, isAutoLayout, false, 3))
+      .filter(Boolean)
+      .join('\n')
+
+    // Override position to match design coordinates exactly
+    const { paddingTop: pt, paddingRight: pr, paddingBottom: pb, paddingLeft: pl } = f
+    const paddingStr = (pt || pr || pb || pl)
+      ? `${pt ?? 0}px ${pr ?? 0}px ${pb ?? 0}px ${pl ?? 0}px`
+      : '0'
+
+    const bgFill = f.fills.find((fill) => fill.visible && fill.type === 'SOLID')
+    const bg = bgFill
+      ? `rgba(${Math.round(bgFill.color.r*255)},${Math.round(bgFill.color.g*255)},${Math.round(bgFill.color.b*255)},${bgFill.opacity})`
+      : 'transparent'
+    const radius = f.cornerRadius > 0 ? `border-radius:${f.cornerRadius}px;` : ''
+    const overflow = f.clipsContent ? 'overflow:hidden;' : ''
+
+    return `      <div style="position:absolute;left:${Math.round(f.x)}px;top:${Math.round(f.y)}px;width:${Math.round(f.width)}px;height:${Math.round(f.height)}px;background:${bg};padding:${paddingStr};${radius}${overflow}box-sizing:border-box">\n${childrenHtml}\n      </div>`
+  }).join('\n')
+
+  const { panX, panY, zoom } = viewport
+  const bg = '#1e1e1e'
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:100%;height:100%;overflow:hidden;background:${bg}}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  img{max-width:100%;display:block}
+  #stage{position:absolute;top:0;left:0;transform-origin:0 0;transform:translate(${Math.round(panX)}px,${Math.round(panY)}px) scale(${zoom})}
+</style>
+</head>
+<body>
+  <div id="stage">
+${frameBlocks}
+  </div>
+</body>
+</html>`
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────

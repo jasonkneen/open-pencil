@@ -121,7 +121,9 @@ export {
   nodeToHtml,
   pageToHtml,
   selectionToHtml,
+  canvasPageToHtml,
   type HtmlEmitOptions,
+  type CanvasViewport,
 } from './render'
 export {
   parseFigmaClipboard,
