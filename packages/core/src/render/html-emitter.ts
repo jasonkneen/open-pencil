@@ -155,6 +155,21 @@ export function selectionToHtml(
 }
 
 /**
+ * Emit a single frame's inner content as an HTML fragment (no outer box).
+ * Used for per-frame preview overlays — the caller controls the outer container.
+ */
+export function frameInnerHtml(frameId: string, graph: SceneGraph): string {
+  const frame = graph.getNode(frameId)
+  if (!frame) return ''
+  const isAutoLayout = frame.layoutMode !== 'NONE'
+  return graph
+    .getChildren(frameId)
+    .map((c) => renderNode(c, graph, isAutoLayout, false, 0))
+    .filter(Boolean)
+    .join('\n')
+}
+
+/**
  * Emit the page with frames positioned exactly as they are on the canvas,
  * applying the current pan + zoom so the preview matches 1:1 with the Skia view.
  */

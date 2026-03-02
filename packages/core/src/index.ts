@@ -122,6 +122,7 @@ export {
   pageToHtml,
   selectionToHtml,
   canvasPageToHtml,
+  frameInnerHtml,
   type HtmlEmitOptions,
   type CanvasViewport,
 } from './render'

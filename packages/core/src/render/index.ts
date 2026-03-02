@@ -32,5 +32,5 @@ export { renderTree, type RenderResult } from './renderer'
 export { renderJsx, renderTreeNode, buildComponent } from './render-jsx'
 
 export { sceneNodeToJsx, selectionToJsx } from './export-jsx'
-export { nodeToHtml, pageToHtml, selectionToHtml, canvasPageToHtml, type HtmlEmitOptions, type CanvasViewport } from './html-emitter'
+export { nodeToHtml, pageToHtml, selectionToHtml, canvasPageToHtml, frameInnerHtml, type HtmlEmitOptions, type CanvasViewport } from './html-emitter'
 export { nodeToCSS, cssPropsToString, type CSSProps } from './style-translator'
