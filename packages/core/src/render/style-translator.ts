@@ -17,13 +17,13 @@ function rgba(color: Color, opacity = 1): string {
 
 function solidFill(fills: Fill[]): string | null {
   if (!fills || !Array.isArray(fills)) return null;
-  const f = fills.find((f) => f.visible && f.type === 'SOLID')
-  return f ? rgba(f.color, f.opacity) : null
+  const f = fills.find((f) => f.visible !== false && f.type === 'SOLID')
+  return f ? rgba(f.color, f.opacity ?? 1) : null
 }
 
 function gradientFill(fills: Fill[]): string | null {
   if (!fills || !Array.isArray(fills)) return null;
-  const f = fills.find((f) => f.visible && (f.type === 'GRADIENT_LINEAR' || f.type === 'GRADIENT_RADIAL'))
+  const f = fills.find((f) => f.visible !== false && (f.type === 'GRADIENT_LINEAR' || f.type === 'GRADIENT_RADIAL'))
   if (!f || !f.gradientStops) return null
   const stops = f.gradientStops
     .map((s) => `${rgba(s.color, s.color.a)} ${Math.round(s.position * 100)}%`)
@@ -35,10 +35,10 @@ function gradientFill(fills: Fill[]): string | null {
 
 function strokeCss(strokes: Stroke[]): string | null {
   if (!strokes || !Array.isArray(strokes)) return null;
-  const s = strokes.find((s) => s.visible)
+  const s = strokes.find((s) => s.visible !== false)
   if (!s) return null
   const align = s.align === 'INSIDE' ? 'inset' : s.align === 'OUTSIDE' ? 'outset' : ''
-  return `${s.weight}px solid ${rgba(s.color, s.opacity)}${align ? ` ${align}` : ''}`
+  return `${s.weight}px solid ${rgba(s.color, s.opacity ?? 1)}${align ? ` ${align}` : ''}`
 }
 
 function shadowCss(effects: Effect[]): string {
@@ -126,7 +126,7 @@ export function nodeToCSS(
   parentIsAutoLayout: boolean,
   isRoot = false
 ): CSSProps {
-  const css: CSSProps = { boxSizing: 'border-box' }
+  const css: CSSProps = { boxSizing: 'border-box', pointerEvents: 'none', userSelect: 'none' }
   const isAutoLayout = node.layoutMode !== 'NONE'
 
   // Positioning
@@ -203,10 +203,6 @@ export function nodeToCSS(
   if (node.rotation && node.rotation !== 0) {
     css.transform = `rotate(${Math.round(node.rotation * 100) / 100}deg)`
   }
-
-  // Pointer events and user select
-  css.pointerEvents = 'none'
-  css.userSelect = 'none'
 
   // Text
   if (node.type === 'TEXT') {
