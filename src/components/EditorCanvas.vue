@@ -129,7 +129,7 @@ const cursor = computed(() => {
         <Transition name="preview-fade">
           <div
             v-if="f.isPreviewing"
-            class="pointer-events-auto absolute z-10 origin-top-left overflow-hidden"
+            class="pointer-events-auto absolute z-10 origin-top-left overflow-hidden bg-white"
             :style="{
               left: `${f.screenX}px`,
               top: `${f.screenY}px`,

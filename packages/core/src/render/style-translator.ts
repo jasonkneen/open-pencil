@@ -16,11 +16,13 @@ function rgba(color: Color, opacity = 1): string {
 }
 
 function solidFill(fills: Fill[]): string | null {
+  if (!fills || !Array.isArray(fills)) return null;
   const f = fills.find((f) => f.visible && f.type === 'SOLID')
   return f ? rgba(f.color, f.opacity) : null
 }
 
 function gradientFill(fills: Fill[]): string | null {
+  if (!fills || !Array.isArray(fills)) return null;
   const f = fills.find((f) => f.visible && (f.type === 'GRADIENT_LINEAR' || f.type === 'GRADIENT_RADIAL'))
   if (!f || !f.gradientStops) return null
   const stops = f.gradientStops
@@ -32,6 +34,7 @@ function gradientFill(fills: Fill[]): string | null {
 }
 
 function strokeCss(strokes: Stroke[]): string | null {
+  if (!strokes || !Array.isArray(strokes)) return null;
   const s = strokes.find((s) => s.visible)
   if (!s) return null
   const align = s.align === 'INSIDE' ? 'inset' : s.align === 'OUTSIDE' ? 'outset' : ''
@@ -39,6 +42,7 @@ function strokeCss(strokes: Stroke[]): string | null {
 }
 
 function shadowCss(effects: Effect[]): string {
+  if (!effects || !Array.isArray(effects)) return '';
   return effects
     .filter((e) => e.visible && (e.type === 'DROP_SHADOW' || e.type === 'INNER_SHADOW'))
     .map((e) => {
@@ -49,6 +53,7 @@ function shadowCss(effects: Effect[]): string {
 }
 
 function blurCss(effects: Effect[]): string | null {
+  if (!effects || !Array.isArray(effects)) return null;
   const blur = effects.find((e) => e.visible && e.type === 'LAYER_BLUR')
   return blur ? `blur(${blur.radius}px)` : null
 }
@@ -105,6 +110,8 @@ export interface CSSProps {
   letterSpacing?: string
   whiteSpace?: string
   boxSizing?: string
+  pointerEvents?: string
+  userSelect?: string
 }
 
 const JUSTIFY: Record<string, string> = {
@@ -196,6 +203,10 @@ export function nodeToCSS(
   if (node.rotation && node.rotation !== 0) {
     css.transform = `rotate(${Math.round(node.rotation * 100) / 100}deg)`
   }
+
+  // Pointer events and user select
+  css.pointerEvents = 'none'
+  css.userSelect = 'none'
 
   // Text
   if (node.type === 'TEXT') {

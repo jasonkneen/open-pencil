@@ -49,7 +49,7 @@ function renderNode(
 
   // VECTOR / STAR / POLYGON — render as a placeholder box
   if (node.type === 'VECTOR' || node.type === 'STAR' || node.type === 'POLYGON') {
-    const fill = node.fills.find((f) => f.visible && f.type === 'SOLID')
+    const fill = (node.fills || []).find((f) => f.visible && f.type === 'SOLID')
     const color = fill ? `rgba(${Math.round(fill.color.r*255)},${Math.round(fill.color.g*255)},${Math.round(fill.color.b*255)},${fill.opacity})` : '#ccc'
     return `${pad}<div style="${styleStr};background:${color}"${dataName}></div>`
   }
@@ -198,7 +198,7 @@ export function canvasPageToHtml(
       ? `${pt ?? 0}px ${pr ?? 0}px ${pb ?? 0}px ${pl ?? 0}px`
       : '0'
 
-    const bgFill = f.fills.find((fill) => fill.visible && fill.type === 'SOLID')
+    const bgFill = (f.fills || []).find((fill) => fill.visible && fill.type === 'SOLID')
     const bg = bgFill
       ? `rgba(${Math.round(bgFill.color.r*255)},${Math.round(bgFill.color.g*255)},${Math.round(bgFill.color.b*255)},${bgFill.opacity})`
       : 'transparent'
