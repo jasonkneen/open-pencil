@@ -71,7 +71,7 @@ function openInTab() {
         <button
           :class="['px-2 py-0.5 rounded-r-md transition-colors', mode === 'selection' ? 'bg-accent/15 text-accent' : 'text-muted hover:text-surface', !hasSelection && 'opacity-40 cursor-not-allowed']"
           :disabled="!hasSelection"
-          @click="if (hasSelection) mode = 'selection'"
+          @click="hasSelection && (mode = 'selection')"
         >
           Selection
         </button>

@@ -117,7 +117,11 @@ export {
   type StyleProps,
   type RenderResult,
   sceneNodeToJsx,
-  selectionToJsx
+  selectionToJsx,
+  nodeToHtml,
+  pageToHtml,
+  selectionToHtml,
+  type HtmlEmitOptions,
 } from './render'
 export {
   parseFigmaClipboard,
