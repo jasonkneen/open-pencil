@@ -83,6 +83,7 @@ declare module 'vue' {
     IconLucideMonitor: typeof import('~icons/lucide/monitor')['default']
     IconLucideMousePointer2: typeof import('~icons/lucide/mouse-pointer2')['default']
     IconLucidePaperclip: typeof import('~icons/lucide/paperclip')['default']
+    IconLucidePencil: typeof import('~icons/lucide/pencil')['default']
     IconLucidePenTool: typeof import('~icons/lucide/pen-tool')['default']
     IconLucidePlus: typeof import('~icons/lucide/plus')['default']
     IconLucideRadius: typeof import('~icons/lucide/radius')['default']
