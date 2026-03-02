@@ -103,7 +103,7 @@ function designTab() {
 }
 
 function chatInput() {
-  return page.locator('input[placeholder="Describe a change…"]')
+  return page.locator('textarea[placeholder="Describe a change…"]')
 }
 
 function apiKeyInput() {
@@ -137,13 +137,13 @@ test('saving API key shows chat interface', async () => {
 })
 
 test('empty input has disabled send button', async () => {
-  const sendButton = page.locator('button[type="submit"]')
+  const sendButton = page.locator('button').filter({ hasText: /^$/ }).last()
   await expect(sendButton).toBeDisabled()
 })
 
 test('typing enables send button', async () => {
   await chatInput().fill('Make a red rectangle')
-  const sendButton = page.locator('button[type="submit"]')
+  const sendButton = page.locator('button').filter({ hasText: /^$/ }).last()
   await expect(sendButton).toBeEnabled()
 })
 
@@ -186,8 +186,8 @@ test('tool calls render in assistant message', async () => {
       page.locator('.chat-markdown, [class*="rounded-tl-md"]').first(),
     ).toBeVisible({ timeout: 30000 })
   } else {
-    await expect(page.getByText('Create Shape')).toBeVisible({ timeout: 5000 })
-    await expect(page.getByText('Done')).toBeVisible()
+    await expect(page.getByText('create_shape')).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText('Completed')).toBeVisible()
     await expect(page.getByText('Created a frame', { exact: false })).toBeVisible()
   }
 })
