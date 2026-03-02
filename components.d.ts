@@ -106,6 +106,7 @@ declare module 'vue' {
     PageSection: typeof import('./src/components/properties/PageSection.vue')['default']
     PagesPanel: typeof import('./src/components/PagesPanel.vue')['default']
     PositionSection: typeof import('./src/components/properties/PositionSection.vue')['default']
+    PreviewPanel: typeof import('./src/components/PreviewPanel.vue')['default']
     PropertiesPanel: typeof import('./src/components/PropertiesPanel.vue')['default']
     Reasoning: typeof import('./src/components/ai-elements/reasoning/Reasoning.vue')['default']
     ReasoningBlock: typeof import('./src/components/chat/ReasoningBlock.vue')['default']

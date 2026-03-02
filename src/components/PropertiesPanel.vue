@@ -7,6 +7,7 @@ import { useEditorStore } from '@/stores/editor'
 import ChatPanel from './ChatPanel.vue'
 import CodePanel from './CodePanel.vue'
 import DesignPanel from './DesignPanel.vue'
+import PreviewPanel from './PreviewPanel.vue'
 
 const store = useEditorStore()
 const { activeTab } = useAIChat(store)
@@ -38,6 +39,13 @@ const { activeTab } = useAIChat(store)
         >
           <icon-lucide-sparkles class="size-3" />
           AI
+        </TabsTrigger>
+        <TabsTrigger
+          value="preview"
+          class="flex items-center gap-1 rounded px-2.5 py-1 text-xs text-muted hover:text-surface data-[state=active]:font-semibold data-[state=active]:text-surface"
+        >
+          <icon-lucide-monitor class="size-3" />
+          Preview
         </TabsTrigger>
         <span
           v-if="activeTab === 'design'"
@@ -72,6 +80,15 @@ const { activeTab } = useAIChat(store)
         :hidden="activeTab !== 'ai'"
       >
         <ChatPanel />
+      </TabsContent>
+
+      <TabsContent
+        value="preview"
+        class="flex min-h-0 flex-1 flex-col"
+        :force-mount="true"
+        :hidden="activeTab !== 'preview'"
+      >
+        <PreviewPanel />
       </TabsContent>
     </TabsRoot>
   </aside>
