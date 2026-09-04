@@ -244,6 +244,12 @@ export const AI_PROVIDERS: AIProviderDef[] = [
         capabilities: ['tools', 'vision']
       },
       {
+        id: 'anthropic/claude-fable-5.1',
+        name: 'Claude Fable 5.1',
+        tag: 'Latest Anthropic',
+        capabilities: ['tools', 'vision']
+      },
+      {
         id: 'openai/gpt-5.6',
         name: 'GPT-5.6',
         tag: 'Latest OpenAI',
@@ -263,8 +269,8 @@ export const AI_PROVIDERS: AIProviderDef[] = [
         capabilities: ['tools']
       },
       {
-        id: 'moonshotai/kimi-k2.5',
-        name: 'Kimi K2.5',
+        id: 'moonshotai/kimi-k3',
+        name: 'Kimi K3',
         tag: 'Vision + code',
         capabilities: ['tools', 'vision']
       },
