@@ -1,30 +1,7 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { ref } from 'vue'
 import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
 import { useI18n } from '@open-pencil/vue'
-
-import { ACP_AGENTS, AI_PROVIDERS, type AIProviderID } from '@open-pencil/core/constants'
-
-import { refreshAIProviderStatus } from '@/app/ai/chat/storage'
-import { resolveModelsDevModel } from '@/app/ai/models/catalog'
-import { useProviderModelCatalog } from '@/app/ai/models/use-provider-model-catalog'
-import {
-  testProviderConnection,
-  type ProviderConnectionTestFailureReason
-} from '@/app/ai/chat/connection-test'
-import {
-  aiModelSettings,
-  createModelProfileDraft,
-  findModelConnectionForDraft,
-  modelConnectionCredentialStatus,
-  modelConnectionUsageCount,
-  modelProfile,
-  removeModelProfile,
-  resolveModelConnectionAPIKey,
-  saveModelProfileDraft,
-  setModelConnectionAPIKey,
-  type AIModelCapability
-} from '@/app/ai/models'
 import ProviderConnectionTestButton from '@/components/chat/ProviderConnectionTestButton.vue'
 import ProviderSelect from '@/components/settings/provider-select/ProviderSelect.vue'
 import ProviderSettingsField from '@/components/settings/provider/ProviderSettingsField.vue'
@@ -35,273 +12,57 @@ import AppInput from '@/components/ui/AppInput.vue'
 import AppSelect from '@/components/ui/AppSelect.vue'
 import AppSwitch from '@/components/ui/AppSwitch.vue'
 import { AppConfirmationDialog } from '@/components/ui/dialog'
-
-const CUSTOM_MODEL_VALUE = '__custom__'
-const DEFAULT_MAX_OUTPUT_TOKENS = 16_384
-
+import { useModelProfileEditor } from '@/app/ai/models/settings/profile-editor/use'
+import type { AIProviderID } from '@open-pencil/core/constants'
 const { profileId } = defineProps<{ profileId?: string }>()
 const emit = defineEmits<{ done: []; deleted: [] }>()
 const { ai, common, credentials } = useI18n()
-const draft = reactive(createModelProfileDraft(profileId))
 const keyInput = ref('')
-const keyStatus = ref<'configured' | 'missing' | 'unavailable' | 'locked'>('missing')
-const saveError = ref<string | null>(null)
-const connectionTestStatus = ref<'idle' | 'testing' | 'success' | 'error'>('idle')
-const connectionTestReason = ref<ProviderConnectionTestFailureReason | null>(null)
 const deleteOpen = ref(false)
+const profile = useModelProfileEditor({ profileId, keyInput, labels: ai })
+const {
+  draft,
+  providerDef,
+  isACP,
+  isHarness,
+  supportsReasoningEffort,
+  modelOptions,
+  selectedModelValue,
+  knownModel,
+  knownCapabilities,
+  outputTokenRecommendation,
+  modelDisplayName,
+  hasExistingKey,
+  canDelete,
+  toolsEnabled,
+  visionEnabled,
+  canSave,
+  canTest,
+  connectionTestStatus,
+  connectionTestReason,
+  saveError,
+  clearKey,
+  testConnection
+} = profile
+const CUSTOM_MODEL_VALUE = '__custom__'
 const advancedOpen = ref(Boolean(draft.customModelID.trim()))
-const customModelSelected = ref(
-  Boolean(draft.customModelID.trim()) || draft.providerID === 'harness:pi'
-)
-const catalogModel = ref<(typeof providerDef.value.models)[number] | null>(null)
-
-const providerDef = computed(
-  () => AI_PROVIDERS.find((provider) => provider.id === draft.providerID) ?? AI_PROVIDERS[0]
-)
-const catalogProviderID = computed(() => draft.providerID)
-const fallbackModels = computed(() => providerDef.value.models)
-const { models: availableModels } = useProviderModelCatalog(catalogProviderID, fallbackModels)
-const isACP = computed(() => draft.providerID.startsWith('acp:'))
-const isHarness = computed(() => draft.providerID === 'harness:pi')
-const supportsReasoningEffort = computed(() =>
-  ['openai', 'openai-compatible', 'openrouter'].includes(draft.providerID)
-)
-const providerDisplayName = computed(() => {
-  if (!isACP.value) return providerDef.value.name
-  const agentID = draft.providerID.slice('acp:'.length)
-  return ACP_AGENTS.find((agent) => agent.id === agentID)?.name ?? draft.providerID
-})
-function modelGroup(modelID: string, recommendedIds: Set<string>, latestIds: Set<string>): string {
-  if (recommendedIds.has(modelID)) return ai.value.recommendedModels
-  if (latestIds.has(modelID)) return ai.value.latestModels
-  return ai.value.allModels
+function updateProvider(id: AIProviderID) {
+  profile.updateProvider(id)
+  advancedOpen.value = id === 'harness:pi'
 }
-
-const modelOptions = computed(() => {
-  const recommendedIds = new Set(providerDef.value.models.map((model) => model.id))
-  const latestIds = new Set(
-    availableModels.value
-      .filter((model) => !recommendedIds.has(model.id) && model.releaseDate)
-      .slice(0, 8)
-      .map((model) => model.id)
-  )
-  return [
-    ...availableModels.value.map((model) => ({
-      value: model.id,
-      label: model.name,
-      description: model.id,
-      meta: model.tag ?? (latestIds.has(model.id) ? ai.value.latest : undefined),
-      group: modelGroup(model.id, recommendedIds, latestIds)
-    })),
-    ...(providerDef.value.supportsCustomModel
-      ? [
-          {
-            value: CUSTOM_MODEL_VALUE,
-            label: ai.value.customModel,
-            group: ai.value.customModel
-          }
-        ]
-      : [])
-  ]
-})
-const selectedModelValue = computed(() =>
-  customModelSelected.value ? CUSTOM_MODEL_VALUE : draft.modelID
-)
-const knownModel = computed(() => {
-  if (isACP.value) return null
-  if (draft.customModelID.trim()) return catalogModel.value
-  return (
-    catalogModel.value ??
-    providerDef.value.models.find((model) => model.id === draft.modelID) ??
-    null
-  )
-})
-const knownCapabilities = computed<AIModelCapability[]>(() => [
-  ...(knownModel.value?.capabilities ?? ['tools'])
-])
-const outputTokenRecommendation = computed(
-  () => knownModel.value?.recommendedMaxOutputTokens ?? DEFAULT_MAX_OUTPUT_TOKENS
-)
-const modelDisplayName = computed(() => {
-  const modelId = draft.customModelID.trim() || draft.modelID
-  return providerDef.value.models.find((model) => model.id === modelId)?.name || modelId
-})
-const hasExistingKey = computed(() => keyStatus.value === 'configured')
-const canDelete = computed(() => Boolean(profileId) && aiModelSettings.value.models.length > 1)
-const toolsEnabled = capabilityModel('tools')
-const visionEnabled = capabilityModel('vision')
-const canSave = computed(
-  () =>
-    Boolean(draft.name.trim()) &&
-    (isACP.value ||
-      (customModelSelected.value
-        ? Boolean(draft.customModelID.trim())
-        : Boolean(draft.modelID.trim())))
-)
-const canTest = computed(() => {
-  if (isACP.value || isHarness.value) return false
-  if (!keyInput.value.trim() && !hasExistingKey.value) return false
-  if (providerDef.value.supportsCustomBaseURL && !draft.customBaseURL.trim()) return false
-  return customModelSelected.value
-    ? Boolean(draft.customModelID.trim())
-    : Boolean(draft.modelID.trim())
-})
-
-function capabilityModel(capability: AIModelCapability) {
-  return computed({
-    get: () => draft.capabilities.includes(capability),
-    set: (enabled: boolean) => {
-      if (enabled && !draft.capabilities.includes(capability)) draft.capabilities.push(capability)
-      if (!enabled) {
-        draft.capabilities = draft.capabilities.filter((value) => value !== capability)
-      }
-    }
-  })
+function updateModel(id: string) {
+  profile.updateModel(id)
+  if (id === CUSTOM_MODEL_VALUE) advancedOpen.value = true
 }
-
-function resetConnectionTest(): void {
-  connectionTestStatus.value = 'idle'
-  connectionTestReason.value = null
+async function save() {
+  if (await profile.save()) emit('done')
 }
-
-async function refreshKeyStatus(): Promise<void> {
-  const connection = findModelConnectionForDraft(draft)
-  keyStatus.value = connection ? await modelConnectionCredentialStatus(connection.id) : 'missing'
-}
-
-function effectiveModelID(): string {
-  return customModelSelected.value ? draft.customModelID.trim() : draft.modelID.trim()
-}
-
-async function refreshCatalogModel(): Promise<void> {
-  if (isACP.value) {
-    catalogModel.value = null
-    return
-  }
-  const providerID = draft.providerID
-  const modelID = effectiveModelID()
-  catalogModel.value = await resolveModelsDevModel(providerID, modelID)
-  if (providerID !== draft.providerID || modelID !== effectiveModelID()) return
-  applyKnownModelMetadata()
-}
-
-function applyKnownModelMetadata(): void {
-  if (!knownModel.value) return
-  draft.capabilities = [...knownCapabilities.value]
-  draft.maxOutputTokens = outputTokenRecommendation.value
-}
-
-function updateProvider(providerID: AIProviderID): void {
-  draft.providerID = providerID
-  draft.sourceConnectionId = null
-  const provider = AI_PROVIDERS.find((definition) => definition.id === providerID)
-  draft.modelID = provider?.defaultModel ?? ''
-  draft.customModelID = ''
-  customModelSelected.value = providerID === 'harness:pi'
-  draft.customBaseURL = ''
-  draft.customAPIType = 'completions'
-  advancedOpen.value = providerID === 'harness:pi'
-  if (providerID.startsWith('acp:')) {
-    draft.capabilities = ['tools']
-    if (!draft.name.trim()) draft.name = providerDisplayName.value
-  } else {
-    applyKnownModelMetadata()
-  }
-  keyInput.value = ''
-  resetConnectionTest()
-  void refreshCatalogModel()
-  void refreshKeyStatus()
-}
-
-function updateModel(modelID: string): void {
-  if (modelID === CUSTOM_MODEL_VALUE) {
-    customModelSelected.value = true
-    draft.customModelID = ''
-    advancedOpen.value = true
-    catalogModel.value = null
-    resetConnectionTest()
-    return
-  }
-  draft.modelID = modelID
-  customModelSelected.value = false
-  draft.customModelID = ''
-  applyKnownModelMetadata()
-  void refreshCatalogModel()
-  if (!draft.name.trim()) draft.name = modelDisplayName.value
-  resetConnectionTest()
-}
-
-async function save(): Promise<void> {
-  saveError.value = null
-  try {
-    applyKnownModelMetadata()
-    if (!draft.name.trim()) draft.name = modelDisplayName.value || providerDisplayName.value
-    const profile = saveModelProfileDraft(draft)
-    if (keyInput.value.trim()) {
-      await setModelConnectionAPIKey(profile.connectionId, keyInput.value)
-      await refreshAIProviderStatus()
-      keyInput.value = ''
-    }
-    emit('done')
-  } catch (reason) {
-    saveError.value = reason instanceof Error ? reason.message : String(reason)
+async function remove() {
+  if (await profile.remove()) {
+    deleteOpen.value = false
+    emit('deleted')
   }
 }
-
-async function clearKey(): Promise<void> {
-  const connection = findModelConnectionForDraft(draft)
-  if (!connection) return
-  await setModelConnectionAPIKey(connection.id, '')
-  await refreshAIProviderStatus()
-  keyInput.value = ''
-  await refreshKeyStatus()
-}
-
-async function testConnection(): Promise<void> {
-  connectionTestStatus.value = 'testing'
-  connectionTestReason.value = null
-  const connection = findModelConnectionForDraft(draft)
-  const existingKey = connection ? await resolveModelConnectionAPIKey(connection.id) : null
-  const result = await testProviderConnection({
-    providerID: draft.providerID,
-    apiKey: keyInput.value.trim() || existingKey || '',
-    modelID: draft.modelID,
-    customModelID: draft.customModelID,
-    customBaseURL: draft.customBaseURL,
-    customAPIType: draft.customAPIType
-  })
-  if (result.ok) {
-    connectionTestStatus.value = 'success'
-    return
-  }
-  connectionTestStatus.value = 'error'
-  connectionTestReason.value = result.reason
-}
-
-async function remove(): Promise<void> {
-  if (!profileId) return
-  const profile = modelProfile(profileId)
-  if (profile && modelConnectionUsageCount(profile.connectionId) === 1) {
-    await setModelConnectionAPIKey(profile.connectionId, '')
-  }
-  removeModelProfile(profileId)
-  await refreshAIProviderStatus()
-  deleteOpen.value = false
-  emit('deleted')
-}
-
-watch(
-  () => [draft.customBaseURL, draft.customModelID, draft.customAPIType, draft.modelID],
-  resetConnectionTest
-)
-watch(
-  () => draft.customModelID,
-  () => {
-    if (customModelSelected.value) void refreshCatalogModel()
-  }
-)
-void refreshCatalogModel()
-void refreshKeyStatus()
 </script>
 
 <template>

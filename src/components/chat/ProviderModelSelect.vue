@@ -5,6 +5,7 @@ import { useI18n } from '@open-pencil/vue'
 
 import AppCombobox from '@/components/ui/AppCombobox.vue'
 import { useAIChat } from '@/app/ai/chat/use'
+import { modelPickerOptions } from '@/app/ai/models/picker/options'
 import { useProviderModelCatalog } from '@/app/ai/models/use-provider-model-catalog'
 
 const { modelID, providerDef, providerID } = useAIChat()
@@ -12,28 +13,7 @@ const { ai, common } = useI18n()
 const fallbackModels = computed(() => providerDef.value.models)
 const { models } = useProviderModelCatalog(providerID, fallbackModels)
 
-function modelGroup(modelID: string, recommendedIds: Set<string>, latestIds: Set<string>): string {
-  if (recommendedIds.has(modelID)) return ai.value.recommendedModels
-  if (latestIds.has(modelID)) return ai.value.latestModels
-  return ai.value.allModels
-}
-
-const options = computed(() => {
-  const recommendedIds = new Set(providerDef.value.models.map((model) => model.id))
-  const latestIds = new Set(
-    models.value
-      .filter((model) => !recommendedIds.has(model.id) && model.releaseDate)
-      .slice(0, 8)
-      .map((model) => model.id)
-  )
-  return models.value.map((model) => ({
-    value: model.id,
-    label: model.name,
-    description: model.id,
-    meta: model.tag ?? (latestIds.has(model.id) ? ai.value.latest : undefined),
-    group: modelGroup(model.id, recommendedIds, latestIds)
-  }))
-})
+const options = computed(() => modelPickerOptions(models.value, providerDef.value.models, ai.value))
 </script>
 
 <template>

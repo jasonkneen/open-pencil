@@ -22,6 +22,10 @@ Bun workspace packages:
 
 The root Tauri/Vite app lives in `src/`; app services and state belong under `src/app/**`, views under `src/views/**`, and app UI under `src/components/**`.
 
+### Settings UI ownership
+
+Settings components own layout, translated copy, confirmation visibility, and emits. Reactive settings workflows live under the owning app domain's `settings/` folder (for example `src/app/ai/models/settings/profile-editor/{use,selection,connection}.ts`), not a global composables bucket. Use `use.ts` for orchestration and focused sibling modules for substantial sub-workflows. Keep persistence and external operations in domain services, and pure option projections as ordinary functions. Return operation outcomes rather than importing dialogs, routers, or toast UI into workflow composables. Keep newly entered secrets short-lived, never expose saved secrets, and guard async results against changed targets. Small presentation-only computed bindings can remain in components.
+
 ### Public package exports
 
 Across package/app boundaries, import the owning package's public exports—never workspace internals or forwarding-only shims. `@open-pencil/scene-graph` owns graph types and primitives; `@open-pencil/kiwi` owns low-level Kiwi/FIG helpers; `@open-pencil/core` provides the compatibility barrel plus targeted subpaths listed in `packages/core/package.json`.

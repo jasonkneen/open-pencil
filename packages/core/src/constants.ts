@@ -312,10 +312,10 @@ export const AI_PROVIDERS: AIProviderDef[] = [
     keyURL: 'https://platform.openai.com/api-keys',
     defaultModel: 'gpt-5.6',
     models: [
-      { id: 'gpt-5.6', name: 'GPT-5.6', tag: 'Best' },
-      { id: 'gpt-5.5', name: 'GPT-5.5' },
-      { id: 'gpt-5.4-mini', name: 'GPT-5.4 mini', tag: 'Fast' },
-      { id: 'gpt-5.4-nano', name: 'GPT-5.4 nano', tag: 'Cheap' }
+      { id: 'gpt-5.6', name: 'GPT-5.6', tag: 'Best', capabilities: ['tools', 'vision'] },
+      { id: 'gpt-5.5', name: 'GPT-5.5', capabilities: ['tools', 'vision'] },
+      { id: 'gpt-5.4-mini', name: 'GPT-5.4 mini', tag: 'Fast', capabilities: ['tools', 'vision'] },
+      { id: 'gpt-5.4-nano', name: 'GPT-5.4 nano', tag: 'Cheap', capabilities: ['tools', 'vision'] }
     ]
   },
   {
@@ -367,7 +367,12 @@ export const AI_PROVIDERS: AIProviderDef[] = [
       { id: 'glm-5.3', name: 'GLM-5.3', tag: 'Best' },
       { id: 'glm-5.3-flash', name: 'GLM-5.3-Flash', tag: 'Fast' },
       { id: 'glm-5.2', name: 'GLM-5.2' },
-      { id: 'glm-5v-turbo', name: 'GLM-5V-Turbo', tag: 'Vision' },
+      {
+        id: 'glm-5v-turbo',
+        name: 'GLM-5V-Turbo',
+        tag: 'Vision',
+        capabilities: ['tools', 'vision']
+      },
       { id: 'glm-5.1', name: 'GLM-5.1' },
       { id: 'glm-5', name: 'GLM-5' },
       { id: 'glm-5-code', name: 'GLM-5-Code' },

@@ -86,9 +86,16 @@ async function resolvedCatalog(fetcher?: typeof fetch): Promise<ModelsDevCatalog
   const resolvedFetcher = fetcher ?? nativeFetch
   if (!resolvedFetcher) return null
   const useCache = resolvedFetcher === nativeFetch
-  return useCache
-    ? (catalogPromise ??= loadCatalog(resolvedFetcher, { useCache: true }))
-    : loadCatalog(resolvedFetcher, { useCache: false })
+  if (!useCache) return loadCatalog(resolvedFetcher, { useCache: false })
+  const pending = (catalogPromise ??= loadCatalog(resolvedFetcher, { useCache: true }))
+  try {
+    const catalog = await pending
+    if (!catalog && catalogPromise === pending) catalogPromise = null
+    return catalog
+  } catch {
+    if (catalogPromise === pending) catalogPromise = null
+    return null
+  }
 }
 
 function modelIDCandidates(providerKey: string, modelID: string): string[] {
@@ -112,7 +119,7 @@ function curatedProviderModels(providerID: AIProviderID): ModelOption[] {
 function supportsDesignWork(model: ModelsDevModel): boolean {
   if (model.tool_call !== true || model.status === 'deprecated') return false
   const outputModalities = model.modalities?.output
-  return !Array.isArray(outputModalities) || outputModalities.includes('text')
+  return Array.isArray(outputModalities) && outputModalities.includes('text')
 }
 
 function mergeCuratedModels(curated: ModelOption[], catalog: ModelOption[]): ModelOption[] {
