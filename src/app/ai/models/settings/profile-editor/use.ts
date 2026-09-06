@@ -26,6 +26,7 @@ interface ProfileEditorOptions {
 
 export function useModelProfileEditor({ profileId, keyInput, labels: ai }: ProfileEditorOptions) {
   const draft = reactive(createModelProfileDraft(profileId))
+
   const selection = useProfileModelSelection(draft, ai)
   const {
     providerDef,
@@ -44,7 +45,9 @@ export function useModelProfileEditor({ profileId, keyInput, labels: ai }: Profi
     visionEnabled,
     applyKnownModelMetadata
   } = selection
+
   const saveError = ref<string | null>(null)
+
   const {
     connectionTestStatus,
     connectionTestReason,
@@ -55,6 +58,7 @@ export function useModelProfileEditor({ profileId, keyInput, labels: ai }: Profi
     clearKey,
     testConnection
   } = useProfileConnection({ draft, keyInput, providerDef, isACP, isHarness, customModelSelected })
+
   const canDelete = computed(() => Boolean(profileId) && aiModelSettings.value.models.length > 1)
   const canSave = computed(
     () =>
@@ -64,18 +68,22 @@ export function useModelProfileEditor({ profileId, keyInput, labels: ai }: Profi
           ? Boolean(draft.customModelID.trim())
           : Boolean(draft.modelID.trim())))
   )
+
   function updateProvider(id: AIProviderID) {
     selection.updateProvider(id)
     keyInput.value = ''
     resetConnectionTest()
     void refreshKeyStatus()
   }
+
   function updateModel(id: string) {
     selection.updateModel(id)
     resetConnectionTest()
   }
+
   async function save(): Promise<boolean> {
     saveError.value = null
+
     try {
       applyKnownModelMetadata()
       if (!draft.name.trim()) draft.name = modelDisplayName.value || providerDisplayName.value
@@ -91,8 +99,10 @@ export function useModelProfileEditor({ profileId, keyInput, labels: ai }: Profi
       return false
     }
   }
+
   async function remove(): Promise<boolean> {
     if (!profileId) return false
+
     const profile = modelProfile(profileId)
     if (profile && modelConnectionUsageCount(profile.connectionId) === 1) {
       await setModelConnectionAPIKey(profile.connectionId, '')
@@ -102,11 +112,14 @@ export function useModelProfileEditor({ profileId, keyInput, labels: ai }: Profi
 
     return true
   }
+
   watch(
     () => [draft.customBaseURL, draft.customModelID, draft.customAPIType, draft.modelID],
     resetConnectionTest
   )
+
   void refreshKeyStatus()
+
   return {
     draft,
     providerDef,

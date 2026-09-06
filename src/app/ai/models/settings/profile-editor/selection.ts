@@ -11,6 +11,7 @@ import type { AIModelProfileDraft, AIModelCapability } from '@/app/ai/models'
 import { resolveModelsDevModel } from '@/app/ai/models/catalog'
 import { modelPickerOptions, type ModelPickerLabels } from '@/app/ai/models/picker/options'
 import { useProviderModelCatalog } from '@/app/ai/models/use-provider-model-catalog'
+
 export function useProfileModelSelection(
   draft: AIModelProfileDraft,
   ai: Readonly<Ref<ModelPickerLabels & { customModel: string }>>
@@ -21,6 +22,7 @@ export function useProfileModelSelection(
     Boolean(draft.customModelID.trim()) || draft.providerID === 'harness:pi'
   )
   const catalogModel = ref<ModelOption | null>(null)
+
   const providerDef = computed(
     () => AI_PROVIDERS.find((provider) => provider.id === draft.providerID) ?? AI_PROVIDERS[0]
   )
@@ -34,6 +36,7 @@ export function useProfileModelSelection(
   )
   const providerDisplayName = computed(() => {
     if (!isACP.value) return providerDef.value.name
+
     const agentID = draft.providerID.slice('acp:'.length)
     return ACP_AGENTS.find((agent) => agent.id === agentID)?.name ?? draft.providerID
   })
@@ -74,6 +77,7 @@ export function useProfileModelSelection(
   })
   const toolsEnabled = capabilityModel('tools')
   const visionEnabled = capabilityModel('vision')
+
   function capabilityModel(capability: AIModelCapability) {
     return computed({
       get: () => draft.capabilities.includes(capability),
@@ -85,9 +89,11 @@ export function useProfileModelSelection(
       }
     })
   }
+
   function effectiveModelID(): string {
     return customModelSelected.value ? draft.customModelID.trim() : draft.modelID.trim()
   }
+
   async function refreshCatalogModel(): Promise<void> {
     if (isACP.value) {
       catalogModel.value = null
@@ -97,14 +103,18 @@ export function useProfileModelSelection(
     const modelID = effectiveModelID()
     const resolved = await resolveModelsDevModel(providerID, modelID)
     if (providerID !== draft.providerID || modelID !== effectiveModelID()) return
+
     catalogModel.value = resolved
     applyKnownModelMetadata()
   }
+
   function applyKnownModelMetadata(): void {
     if (!knownModel.value) return
+
     draft.capabilities = [...knownCapabilities.value]
     draft.maxOutputTokens = outputTokenRecommendation.value
   }
+
   function updateProvider(providerID: AIProviderID): void {
     catalogModel.value = null
     draft.providerID = providerID
@@ -125,6 +135,7 @@ export function useProfileModelSelection(
 
     void refreshCatalogModel()
   }
+
   function updateModel(modelID: string): void {
     if (modelID === CUSTOM_MODEL_VALUE) {
       customModelSelected.value = true
@@ -141,13 +152,16 @@ export function useProfileModelSelection(
     void refreshCatalogModel()
     if (!draft.name.trim()) draft.name = modelDisplayName.value
   }
+
   watch(
     () => draft.customModelID,
     () => {
       if (customModelSelected.value) void refreshCatalogModel()
     }
   )
+
   void refreshCatalogModel()
+
   return {
     providerDef,
     isACP,

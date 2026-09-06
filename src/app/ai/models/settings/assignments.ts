@@ -8,16 +8,19 @@ import {
   type AIModelRole,
   type OptionalAIModelRole
 } from '@/app/ai/models'
+
 export function useModelRoleAssignments(
   ai: Readonly<Ref<{ modelRoleUseDesign: string; noModel: string }>>
 ) {
   const SAME_AS_DESIGN = '__design__'
   const NO_MODEL = '__none__'
+
   function assignmentValue(role: AIModelRole): string {
     const assignment = aiModelSettings.value.assignments[role]
     if (assignment === null) return NO_MODEL
     return assignment === 'design' ? SAME_AS_DESIGN : assignment
   }
+
   function optionsForRole(role: AIModelRole) {
     const profiles = aiModelSettings.value.models
       .filter((profile) => {
@@ -28,6 +31,7 @@ export function useModelRoleAssignments(
       })
       .map((profile) => ({ value: profile.id, label: profile.name }))
     if (role === 'design') return profiles
+
     const design = modelProfile(aiModelSettings.value.assignments.design)
     const canInherit =
       !isAgentModelProfile(design) && (role !== 'vision' || design?.capabilities.includes('vision'))
@@ -37,6 +41,7 @@ export function useModelRoleAssignments(
       ...profiles
     ]
   }
+
   function updateAssignment(role: AIModelRole, value: string): void {
     if (role === 'design') {
       const profile = modelProfile(value)
