@@ -10,7 +10,7 @@ import {
 import type { AIModelProfileDraft, AIModelCapability } from '@/app/ai/models'
 import { resolveModelsDevModel } from '@/app/ai/models/catalog'
 import { modelPickerOptions, type ModelPickerLabels } from '@/app/ai/models/picker/options'
-import { useProviderModelCatalog } from '@/app/ai/models/use-provider-model-catalog'
+import { useProviderModelCatalog } from '@/app/ai/models/catalog/use'
 export function useProfileModelSelection(
   draft: AIModelProfileDraft,
   ai: Readonly<Ref<ModelPickerLabels & { customModel: string }>>
