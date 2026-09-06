@@ -7,7 +7,7 @@ import {
   setPexelsKey,
   unsplashKeyStatus,
   setUnsplashKey
-} from '@/app/ai/chat/storage'
+} from '@/app/settings/credentials/media'
 import ProviderSettingsKeyField from '@/components/settings/provider/ProviderSettingsKeyField.vue'
 
 const { media, credentials } = useI18n()

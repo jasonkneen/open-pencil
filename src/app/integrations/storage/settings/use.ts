@@ -39,19 +39,22 @@ export function useStorageSettings(credentialDrafts: Ref<Record<string, string>>
     void resumeStorageSync()
   }
   async function saveCredential(field: string): Promise<void> {
-    const value = credentialDrafts.value[field]?.trim()
+    const target = credentialDrafts.value
+    const value = target[field]?.trim()
     if (!value) return
     await appCredentialServices.manager.set(credentialRef(provider.value.id, field), value)
-    credentialDrafts.value[field] = ''
+    if (credentialDrafts.value === target && target[field]?.trim() === value) target[field] = ''
     await refreshStatuses()
     await resumeStorageSync()
   }
   async function clearCredential(field: string): Promise<void> {
+    const target = credentialDrafts.value
     await appCredentialServices.manager.clear(credentialRef(provider.value.id, field))
-    credentialDrafts.value[field] = ''
+    if (credentialDrafts.value === target) target[field] = ''
     await refreshStatuses()
   }
   watch(activeStorageProviderID, (providerID) => {
+    credentialStatuses.value = {}
     preferenceDrafts.value = { ...readStoragePreferences(providerID) }
     credentialDrafts.value = {}
     void refreshStatuses()

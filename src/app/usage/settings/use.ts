@@ -5,9 +5,13 @@ import { diagnostics } from '@/app/diagnostics'
 import { isUsageEnabled } from '@/app/diagnostics/settings'
 import { summarizeUsage, type UsageSummary } from '@/app/usage'
 export function useUsageSettings() {
+  let version = 0
+  let disposed = false
   const summary = ref<UsageSummary>(summarizeUsage([]))
   async function refresh() {
-    summary.value = summarizeUsage(await diagnostics.list())
+    const request = ++version
+    const events = await diagnostics.list()
+    if (!disposed && request === version && isUsageEnabled()) summary.value = summarizeUsage(events)
   }
   onMounted(() => {
     if (!isUsageEnabled()) return
@@ -15,9 +19,15 @@ export function useUsageSettings() {
   })
   const unsubscribe = diagnostics.subscribe(() => {
     if (isUsageEnabled()) void refresh()
-    else summary.value = summarizeUsage([])
+    else {
+      version++
+      summary.value = summarizeUsage([])
+    }
   })
-  tryOnScopeDispose(unsubscribe)
+  tryOnScopeDispose(() => {
+    disposed = true
+    unsubscribe()
+  })
 
   return { summary }
 }
