@@ -11,7 +11,7 @@ import AppSelect from '@/components/ui/select/AppSelect.vue'
 const { media, ai, credentials } = useI18n()
 const keyDraft = ref('')
 
-const { keyStatus, provider, providerOptions, saveCredential, clearCredential } =
+const { keyStatus, error, provider, providerOptions, saveCredential, clearCredential } =
   useVectorizeSettings(keyDraft)
 </script>
 
@@ -43,5 +43,6 @@ const { keyStatus, provider, providerOptions, saveCredential, clearCredential } 
       @change="saveCredential"
       @clear="clearCredential"
     />
+    <p v-if="error" role="alert" class="text-[10px] text-danger">{{ error }}</p>
   </section>
 </template>

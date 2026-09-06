@@ -1,4 +1,5 @@
-import { computed, onMounted, ref, watch, type Ref } from 'vue'
+import { tryOnScopeDispose } from '@vueuse/core'
+import { computed, ref, watch, type Ref } from 'vue'
 
 import {
   createMCPConnectionDraft,
@@ -10,21 +11,36 @@ import {
   type MCPConnectionDraft
 } from '@/app/integrations/mcp'
 import type { CredentialStatus } from '@/app/settings/credentials/types'
+
+const connectionServices = {
+  status: mcpConnectionCredentialStatus,
+  save: saveMCPConnectionDraft,
+  setCredential: setMCPConnectionCredential,
+  remove: removeMCPConnection
+}
+
 export function useMCPConnectionSettings(
   tokenDraft: Ref<string>,
-  automation: Readonly<Ref<{ bearerTokenRequired: string }>>
+  automation: Readonly<Ref<{ bearerTokenRequired: string }>>,
+  services = connectionServices
 ) {
   const draft = ref<MCPConnectionDraft>(createMCPConnectionDraft())
   const tokenStatus = ref<CredentialStatus>('missing')
   const error = ref('')
+  let version = 0
+  let disposed = false
+  tryOnScopeDispose(() => {
+    disposed = true
+    version++
+  })
   const savedConnection = computed(() =>
-    draft.value.id
-      ? mcpConnectionSettings.value.connections.find(
-          (connection) => connection.id === draft.value.id
-        )
-      : undefined
+    mcpConnectionSettings.value.connections.find((connection) => connection.id === draft.value.id)
   )
+  function current(request: number): boolean {
+    return !disposed && request === version
+  }
   function startAdd(): void {
+    version++
     draft.value = createMCPConnectionDraft()
     tokenDraft.value = ''
     tokenStatus.value = 'missing'
@@ -33,57 +49,74 @@ export function useMCPConnectionSettings(
   async function startEdit(id: string): Promise<boolean> {
     const connection = mcpConnectionSettings.value.connections.find((item) => item.id === id)
     if (!connection) return false
+    const request = ++version
     draft.value = createMCPConnectionDraft(connection)
     tokenDraft.value = ''
-    tokenStatus.value = await mcpConnectionCredentialStatus(connection.id)
+    tokenStatus.value = 'missing'
     error.value = ''
-    return true
+    try {
+      const status = await services.status(connection.id)
+      if (!current(request)) return false
+      tokenStatus.value = status
+      return true
+    } catch (cause) {
+      if (current(request)) error.value = cause instanceof Error ? cause.message : String(cause)
+      return false
+    }
   }
   async function save(): Promise<boolean> {
+    const request = ++version
+    const target = { ...draft.value }
+    const token = tokenDraft.value
     error.value = ''
     try {
       if (
-        draft.value.enabled &&
-        draft.value.authenticationType === 'bearer' &&
-        !tokenDraft.value.trim() &&
+        target.enabled &&
+        target.authenticationType === 'bearer' &&
+        !token.trim() &&
         tokenStatus.value !== 'configured'
       ) {
         throw new Error(automation.value.bearerTokenRequired)
       }
-      const connection = saveMCPConnectionDraft(draft.value)
-      if (draft.value.authenticationType === 'none') {
-        await setMCPConnectionCredential(connection.id, '')
-      } else if (tokenDraft.value.trim()) {
-        await setMCPConnectionCredential(connection.id, tokenDraft.value)
-      }
-      tokenDraft.value = ''
+      const connection = services.save(target)
+      if (target.authenticationType === 'none') await services.setCredential(connection.id, '')
+      else if (token.trim()) await services.setCredential(connection.id, token)
+      if (!current(request)) return false
+      if (tokenDraft.value === token) tokenDraft.value = ''
       return true
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : String(cause)
+      if (current(request)) error.value = cause instanceof Error ? cause.message : String(cause)
       return false
     }
   }
   async function clearCredential(): Promise<void> {
-    if (!draft.value.id) return
+    const target = { ...draft.value }
+    if (!target.id) return
+    const request = ++version
+    const token = tokenDraft.value
     error.value = ''
     try {
-      await setMCPConnectionCredential(draft.value.id, '')
+      await services.setCredential(target.id, '')
+      // Disable the connection whose credential was cleared, even if the editor moved on.
+      services.save({ ...target, enabled: false })
+      if (!current(request)) return
       draft.value.enabled = false
-      saveMCPConnectionDraft(draft.value)
-      tokenDraft.value = ''
+      if (tokenDraft.value === token) tokenDraft.value = ''
       tokenStatus.value = 'missing'
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : String(cause)
+      if (current(request)) error.value = cause instanceof Error ? cause.message : String(cause)
     }
   }
   async function remove(): Promise<boolean> {
-    if (!draft.value.id) return false
+    const id = draft.value.id
+    if (!id) return false
+    const request = ++version
     error.value = ''
     try {
-      await removeMCPConnection(draft.value.id)
-      return true
+      await services.remove(id)
+      return current(request)
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : String(cause)
+      if (current(request)) error.value = cause instanceof Error ? cause.message : String(cause)
       return false
     }
   }
@@ -93,10 +126,6 @@ export function useMCPConnectionSettings(
       if (type === 'none') tokenDraft.value = ''
     }
   )
-  onMounted(() => {
-    tokenStatus.value = savedConnection.value ? 'configured' : 'missing'
-  })
-
   return {
     draft,
     tokenStatus,

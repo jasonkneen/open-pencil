@@ -6,7 +6,7 @@ import { diagnostics, type DiagnosticEvent } from '@/app/diagnostics'
 import { useRecentDiagnostics } from '@/app/diagnostics/settings/recent'
 
 test('recent diagnostics unsubscribes and ignores an outstanding refresh after disposal', async () => {
-  let resolveEvents: (events: DiagnosticEvent[]) => void = () => {}
+  let resolveEvents: (events: DiagnosticEvent[]) => void = () => undefined
   let unsubscribed = false
   const listing = spyOn(diagnostics, 'list').mockImplementation(
     () =>
@@ -24,7 +24,7 @@ test('recent diagnostics unsubscribes and ignores an outstanding refresh after d
         () => {
           throw new Error('Disposed refresh must not project')
         },
-        async () => {}
+        async () => undefined
       )
     )
     scope.stop()
