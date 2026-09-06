@@ -9,8 +9,8 @@ import {
 
 import type { AIModelProfileDraft, AIModelCapability } from '@/app/ai/models'
 import { resolveModelsDevModel } from '@/app/ai/models/catalog'
-import { modelPickerOptions, type ModelPickerLabels } from '@/app/ai/models/picker/options'
 import { useProviderModelCatalog } from '@/app/ai/models/catalog/use'
+import { modelPickerOptions, type ModelPickerLabels } from '@/app/ai/models/picker/options'
 
 export function useProfileModelSelection(
   draft: AIModelProfileDraft,

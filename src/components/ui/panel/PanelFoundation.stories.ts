@@ -8,9 +8,9 @@ import LinkIcon from '~icons/lucide/link'
 import RotateIcon from '~icons/lucide/rotate-ccw'
 import SquareIcon from '~icons/lucide/square'
 
+import IconButton from '@/components/ui/button/IconButton.vue'
 import AppInput from '@/components/ui/input/AppInput.vue'
 import AppSelect from '@/components/ui/select/AppSelect.vue'
-import IconButton from '@/components/ui/button/IconButton.vue'
 import SegmentedControl from '@/components/ui/select/SegmentedControl.vue'
 
 import PanelFieldGroup from './PanelFieldGroup.vue'
