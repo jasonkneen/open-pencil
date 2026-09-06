@@ -1,3 +1,4 @@
+import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, onMounted, ref, watch, type Ref } from 'vue'
 
 import {
@@ -27,10 +28,18 @@ export function useStorageSettings(credentialDrafts: Ref<Record<string, string>>
         (field) => !field.required || credentialStatuses.value[field.id] === 'configured'
       )
   )
+  let statusRequest = 0
+  let disposed = false
+  tryOnScopeDispose(() => {
+    disposed = true
+    statusRequest++
+  })
   async function refreshStatuses(): Promise<void> {
+    const request = ++statusRequest
     const id = provider.value.id
     const statuses = await storageCredentialStatuses(id)
-    if (provider.value.id === id) credentialStatuses.value = statuses
+    if (!disposed && statusRequest === request && provider.value.id === id)
+      credentialStatuses.value = statuses
   }
   function savePreferences(): void {
     for (const field of provider.value.preferenceFields) {

@@ -60,9 +60,16 @@ export function useMCPConnectionSettings(
       tokenStatus.value = status
       return true
     } catch (cause) {
-      if (current(request)) error.value = cause instanceof Error ? cause.message : String(cause)
-      return false
+      if (!current(request)) return false
+      error.value = cause instanceof Error ? cause.message : String(cause)
+      return true
     }
+  }
+  let mutationQueue: Promise<unknown> = Promise.resolve()
+  function enqueue<T>(operation: () => Promise<T>): Promise<T> {
+    const pending = mutationQueue.then(operation, operation)
+    mutationQueue = pending.catch(() => undefined)
+    return pending
   }
   async function save(): Promise<boolean> {
     const request = ++version
@@ -78,9 +85,12 @@ export function useMCPConnectionSettings(
       ) {
         throw new Error(automation.value.bearerTokenRequired)
       }
-      const connection = services.save(target)
-      if (target.authenticationType === 'none') await services.setCredential(connection.id, '')
-      else if (token.trim()) await services.setCredential(connection.id, token)
+      await enqueue(async () => {
+        const connection = services.save({ ...target, enabled: false })
+        if (target.authenticationType === 'none') await services.setCredential(connection.id, '')
+        else if (token.trim()) await services.setCredential(connection.id, token)
+        services.save({ ...target, id: connection.id })
+      })
       if (!current(request)) return false
       if (tokenDraft.value === token) tokenDraft.value = ''
       return true
@@ -90,15 +100,18 @@ export function useMCPConnectionSettings(
     }
   }
   async function clearCredential(): Promise<void> {
-    const target = { ...draft.value }
-    if (!target.id) return
+    const id = draft.value.id
+    if (!id) return
     const request = ++version
     const token = tokenDraft.value
     error.value = ''
     try {
-      await services.setCredential(target.id, '')
-      // Disable the connection whose credential was cleared, even if the editor moved on.
-      services.save({ ...target, enabled: false })
+      await enqueue(async () => {
+        const connection = mcpConnectionSettings.value.connections.find((item) => item.id === id)
+        if (!connection) throw new Error('Connection no longer exists')
+        services.save({ ...createMCPConnectionDraft(connection), enabled: false })
+        await services.setCredential(id, '')
+      })
       if (!current(request)) return
       draft.value.enabled = false
       if (tokenDraft.value === token) tokenDraft.value = ''
@@ -113,7 +126,7 @@ export function useMCPConnectionSettings(
     const request = ++version
     error.value = ''
     try {
-      await services.remove(id)
+      await enqueue(() => services.remove(id))
       return current(request)
     } catch (cause) {
       if (current(request)) error.value = cause instanceof Error ? cause.message : String(cause)
