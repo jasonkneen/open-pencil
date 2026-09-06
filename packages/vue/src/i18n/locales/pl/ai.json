@@ -109,5 +109,11 @@
   "connectProvider": "Połącz dostawcę AI, aby rozpocząć czat.",
   "getProviderAPIKey": "Pobierz klucz API {provider} →",
   "provider": "Dostawca AI",
-  "modelsTitle": "Modele"
+  "modelsTitle": "Modele",
+  "selectModel": "Wybierz model",
+  "searchModels": "Szukaj modeli…",
+  "recommendedModels": "Polecane",
+  "latestModels": "Najnowsze",
+  "allModels": "Wszystkie modele",
+  "latest": "Nowy"
 }

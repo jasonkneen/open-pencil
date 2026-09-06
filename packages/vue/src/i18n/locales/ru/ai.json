@@ -109,5 +109,11 @@
   "connectProvider": "Подключите AI-провайдера, чтобы начать чат.",
   "getProviderAPIKey": "Получить API-ключ {provider} →",
   "provider": "Провайдер ИИ",
-  "modelsTitle": "Модели"
+  "modelsTitle": "Модели",
+  "selectModel": "Выберите модель",
+  "searchModels": "Поиск моделей…",
+  "recommendedModels": "Рекомендуемые",
+  "latestModels": "Новые",
+  "allModels": "Все модели",
+  "latest": "Новая"
 }

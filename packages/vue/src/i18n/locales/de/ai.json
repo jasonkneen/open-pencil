@@ -109,5 +109,11 @@
   "connectProvider": "Verbinde einen KI-Anbieter, um den Chat zu starten.",
   "getProviderAPIKey": "Einen {provider}-API-Schlüssel erhalten →",
   "provider": "KI-Anbieter",
-  "modelsTitle": "Modelle"
+  "modelsTitle": "Modelle",
+  "selectModel": "Modell auswählen",
+  "searchModels": "Modelle suchen…",
+  "recommendedModels": "Empfohlen",
+  "latestModels": "Neueste",
+  "allModels": "Alle Modelle",
+  "latest": "Neu"
 }

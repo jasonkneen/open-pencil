@@ -109,5 +109,11 @@
   "connectProvider": "Connectez un fournisseur d’IA pour commencer à discuter.",
   "getProviderAPIKey": "Obtenir une clé API {provider} →",
   "provider": "Fournisseur d'IA",
-  "modelsTitle": "Modèles"
+  "modelsTitle": "Modèles",
+  "selectModel": "Sélectionner un modèle",
+  "searchModels": "Rechercher des modèles…",
+  "recommendedModels": "Recommandés",
+  "latestModels": "Plus récents",
+  "allModels": "Tous les modèles",
+  "latest": "Nouveau"
 }
