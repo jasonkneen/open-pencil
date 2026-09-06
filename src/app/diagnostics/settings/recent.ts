@@ -8,21 +8,27 @@ export function useRecentDiagnostics(
   refreshStats: () => Promise<void>
 ) {
   const recentEvents = ref<DiagnosticEventSummary[]>([])
+
   let version = 0
   let disposed = false
+
   async function refresh() {
     const request = ++version
     const events = await diagnostics.list()
     if (!disposed && request === version) recentEvents.value = summarize(events.slice(0, 20))
   }
+
   const unsubscribe = diagnostics.subscribe(() => {
     void refresh()
     void refreshStats()
   })
+
   tryOnScopeDispose(() => {
     disposed = true
     unsubscribe()
   })
+
   void refresh()
+
   return { recentEvents }
 }
