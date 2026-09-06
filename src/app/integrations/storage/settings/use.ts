@@ -42,10 +42,18 @@ export function useStorageSettings(credentialDrafts: Ref<Record<string, string>>
 
   async function refreshStatuses(): Promise<void> {
     const request = ++statusRequest
-    const id = provider.value.id
-    const statuses = await storageCredentialStatuses(id)
-    if (!disposed && statusRequest === request && provider.value.id === id)
-      credentialStatuses.value = statuses
+    const target = provider.value
+    try {
+      const statuses = await storageCredentialStatuses(target.id)
+      if (!disposed && statusRequest === request && provider.value.id === target.id)
+        credentialStatuses.value = statuses
+    } catch {
+      if (!disposed && statusRequest === request && provider.value.id === target.id) {
+        credentialStatuses.value = Object.fromEntries(
+          target.credentialFields.map((field) => [field.id, 'unavailable' as const])
+        )
+      }
+    }
   }
 
   function savePreferences(): void {

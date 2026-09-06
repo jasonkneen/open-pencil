@@ -280,3 +280,41 @@ test('reopened editors serialize writes to the same connection while other conne
     secondScope.stop()
   }
 })
+
+test('blank-token save rechecks status after a different editor clears the credential', async () => {
+  const scope = effectScope()
+  let configured = true
+  const enabled: boolean[] = []
+  const services = {
+    status: async () => (configured ? ('configured' as const) : ('missing' as const)),
+    setCredential: async (_id: string, value: string) => {
+      configured = Boolean(value)
+    },
+    save: (draft: { enabled: boolean }) => {
+      enabled.push(draft.enabled)
+      return connection
+    },
+    remove: async () => undefined
+  }
+  try {
+    const first = scope.run(() =>
+      useMCPConnectionSettings(ref(''), ref({ bearerTokenRequired: 'Required' }), services)
+    )
+    const second = scope.run(() =>
+      useMCPConnectionSettings(ref(''), ref({ bearerTokenRequired: 'Required' }), services)
+    )
+    if (!first || !second) throw new Error('Missing scope')
+    await first.startEdit(connection.id)
+    await second.startEdit(connection.id)
+    second.draft.value.authenticationType = 'bearer'
+    second.draft.value.enabled = true
+    const clearing = first.clearCredential()
+    const saving = second.save()
+    await clearing
+    expect(await saving).toBe(false)
+    expect(second.error.value).toBe('Required')
+    expect(enabled).toEqual([false, false])
+  } finally {
+    scope.stop()
+  }
+})

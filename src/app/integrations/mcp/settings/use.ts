@@ -101,6 +101,10 @@ export function useMCPConnectionSettings(
         const connection = services.save({ ...target, enabled: false })
         if (target.authenticationType === 'none') await services.setCredential(connection.id, '')
         else if (token.trim()) await services.setCredential(connection.id, token)
+        else if (target.enabled && (await services.status(connection.id)) !== 'configured') {
+          throw new Error(automation.value.bearerTokenRequired)
+        }
+
         services.save({ ...target, id: connection.id })
       })
       if (!current(request)) return false
