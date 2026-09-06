@@ -228,3 +228,55 @@ test('serializes overlapping credential replacements', async () => {
     scope.stop()
   }
 })
+
+test('reopened editors serialize writes to the same connection while other connections proceed', async () => {
+  const firstScope = effectScope()
+  const secondScope = effectScope()
+  let finish: () => void = () => undefined
+  const blocked = new Promise<void>((resolve) => {
+    finish = resolve
+  })
+  const writes: string[] = []
+  const services = {
+    status: async () => 'configured' as const,
+    setCredential: async (_id: string, value: string) => {
+      writes.push(value)
+      if (value === 'first') await blocked
+    },
+    save: (draft: { id: `mcp-${string}` | null }) => ({
+      ...connection,
+      id: draft.id ?? connection.id
+    }),
+    remove: async () => undefined
+  }
+  try {
+    const first = firstScope.run(() =>
+      useMCPConnectionSettings(ref('first'), ref({ bearerTokenRequired: 'Required' }), services)
+    )
+    const second = secondScope.run(() =>
+      useMCPConnectionSettings(ref('second'), ref({ bearerTokenRequired: 'Required' }), services)
+    )
+    const other = secondScope.run(() =>
+      useMCPConnectionSettings(ref('other'), ref({ bearerTokenRequired: 'Required' }), services)
+    )
+    if (!first || !second || !other) throw new Error('Missing scope')
+    for (const editor of [first, second, other]) {
+      editor.draft.value.id = connection.id
+      editor.draft.value.authenticationType = 'bearer'
+    }
+    other.draft.value.id = 'mcp-other'
+    const savingFirst = first.save()
+    await Promise.resolve()
+    firstScope.stop()
+    const savingSecond = second.save()
+    await other.save()
+    expect(writes).toEqual(['first', 'other'])
+    finish()
+    await Promise.all([savingFirst, savingSecond])
+    expect(writes).toEqual(['first', 'other', 'second'])
+  } finally {
+    finish()
+    firstScope.stop()
+    secondScope.stop()
+  }
+})
